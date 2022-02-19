@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: provision a variable repository
+
+Parameters:
+  FunctionName:
+    Type: String
+    Description: function name and resource identifier
+    Default: cfn-variable-repository
+
+Resources:
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      RoleName: !Sub ${FunctionName}-role
+      Policies:
+        - PolicyName: LoggingPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - cloudwatch:PutMetricData
+                Resource: !Sub ${CloudWatchLogGroup.Arn}
+
+  CfnVariableRepository:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${FunctionName}
+      Description: cloudformation helper for storing and retrieving dynamic variables
+      Code:
+        ZipFile: |
+          import cfnresponse
+          def handler(event, context):
+            print(event)
+            cfnresponse.send(event, context, cfnresponse.SUCCESS, event['ResourceProperties']['Repository'])
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.9
+      Timeout: 3
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${FunctionName}
+      RetentionInDays: 1

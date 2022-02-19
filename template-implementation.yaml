@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: implement and use a variable repository
+
+Parameters:
+  Foo:
+    Type: String
+    Description: test parameter
+    Default: foo
+  Bar:
+    Type: String
+    Description: test parameter
+    Default: bar
+  Baz:
+    Type: String
+    Description: test parameter
+    Default: baz
+  Bat:
+    Type: String
+    Description: test parameter
+    Default: bat
+
+Resources:
+  CfnVariableRepository:
+    Type: Custom::CfnVariableRepository
+    Properties:
+      ServiceToken: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-variable-repository
+      loglevel: info
+      Repository:
+        LogGroupNameA: !Sub ${Foo}-${Bar}-${Baz}-${Bat}
+        LogGroupNameB: !Sub ${Bat}-${Baz}-${Bar}-${Foo}
+
+  CloudWatchLogGroupA:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${CfnVariableRepository.LogGroupNameA}-a
+      RetentionInDays: 1
+
+  CloudWatchLogGroupB:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${CfnVariableRepository.LogGroupNameA}-b
+      RetentionInDays: 1
+
+  CloudWatchLogGroupC:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${CfnVariableRepository.LogGroupNameB}-a
+      RetentionInDays: 1
+
+  CloudWatchLogGroupD:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${CfnVariableRepository.LogGroupNameB}-b
+      RetentionInDays: 1
+
+Outputs:
+  ResponseFirst:
+    Description: ResponseFirst test output
+    Value: !Sub ${CfnVariableRepository.LogGroupNameA}
+  ResponseSecond:
+    Description: ResponseSecond test output
+    Value: !Sub ${CfnVariableRepository.LogGroupNameB}
+  ResponseThird:
+    Description: ResponseThird test output
+    Value: !Sub ${CfnVariableRepository.LogGroupNameA}
+  ResponseFourth:
+    Description: ResponseFourth test output
+    Value: !Sub ${CfnVariableRepository.LogGroupNameB}
